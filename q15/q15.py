@@ -2,13 +2,18 @@ import heapq
 import sys
 from collections import defaultdict
 
+""" Learnings from this question
 
-# For ease of visualizing
-def print_graph(g):
-    for y in range(len(g)):
-        for x in range(len(g[0])):
-            print(str(g[y][x]).ljust(5), end='')
-        print()
+1. A* not always faster than Dijkstra.
+2. With A*, the heuristic must be _admissible_ in order for the path to be
+   optimal (heuristic cannot return a cost remaining greater than that of the
+   true cost remaining).
+3. Treating entries in the pq as immutable and inserting new entires as they
+   come up (while potentially inserting multiple entries per node) as opposed
+   to modifying them in place and repeatedly calling heapify() is MUCH faster
+   (literally 100x in the case of this example)
+
+"""
 
 
 def nbrs(x, y, max_x, max_y):
