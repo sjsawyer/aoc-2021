@@ -39,13 +39,28 @@ def identity(*args, **kwargs):
     return 0
 
 
-def part1(G, dist=identity):
+def astar(G, dist=identity, scale=5):
     max_x, max_y = max(x for x, _ in G), max(y for _, y in G)
-    heuristic = partial(dist, max_x=max_x, max_y=max_y)
-    gen_nbrs = partial(nbrs, max_x=max_x, max_y=max_y)
+    max_x_scaled = scale * (max_x + 1) - 1
+    max_y_scaled = scale * (max_y + 1) - 1
+
+    heuristic = partial(dist, max_x=max_x_scaled, max_y=max_y_scaled)
+    gen_nbrs = partial(nbrs, max_x=max_x_scaled, max_y=max_y_scaled)
 
     start = (0, 0)
-    goal = (max_x, max_y)
+    goal = (max_x_scaled, max_y_scaled)
+
+    # This will help replicate the map
+    def G_scaled(G, max_x, max_y):
+        width, height = max_x + 1, max_y + 1
+
+        def _eval_G(x, y):
+            x0, y0 = x % width, y % height
+            dx, dy = x // width, y // height
+            return (G[(x0, y0)] + dx + dy - 1) % 9 + 1
+        return _eval_G
+
+    eval_G = G_scaled(G, max_x, max_y)
 
     # Current lowest cost to each node
     costs = defaultdict(lambda: sys.maxsize)
@@ -61,7 +76,7 @@ def part1(G, dist=identity):
             return cost_to_current
         # N.B. we should never have a cycle by nature of the algorithm
         for (nx, ny) in gen_nbrs(x, y):
-            cost_with_current = cost_to_current + G[(nx, ny)]
+            cost_with_current = cost_to_current + eval_G(nx, ny)
             if cost_with_current < costs[(nx, ny)]:
                 # We found a shorter path. Pushing onto heap will naturally
                 # "replace" the previous instance of (nx, ny) by inserting
@@ -73,12 +88,6 @@ def part1(G, dist=identity):
     assert False, "No path found"
 
 
-
-
-def part2(G):
-    pass
-
-
 def main(input_file):
     with open(input_file, 'r') as f:
         lines = f.read().splitlines()
@@ -88,11 +97,11 @@ def main(input_file):
          for x, v in enumerate(line)
     }
 
-    val1 = part1(G)
+    val1 = astar(G)
     print('Part 1:', val1)
 
-    val2 = part2(G)
-    print('Part 2:', val2)
+    #val2 = astar(G)
+    #print('Part 2:', val2)
 
 
 if __name__ == '__main__':
