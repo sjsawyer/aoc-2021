@@ -1,6 +1,7 @@
 import heapq
 import sys
 from collections import defaultdict
+from functools import partial
 
 """ Learnings from this question
 
@@ -34,19 +35,14 @@ def euclidean(x, y, max_x, max_y):
     return ((x - max_x)**2 + (y - max_y)**2)**0.5
 
 
-def identity(*args):
+def identity(*args, **kwargs):
     return 0
 
 
 def part1(G, dist=identity):
-    max_x, max_y = len(G[0])-1, len(G)-1
-    # Using A*, we will create a heuristic H where H[y][x] is the cost to
-    # reach the goal from (x, y) (Manhattan distance here)
-    # TODO: is manhattan the best choice?
-    # TODO: ensure heuristic is _admissible_ (never over-estimates cost to goal)
-    H = [[dist(x, y, max_x, max_y)
-          for x in range(max_x + 1)]
-         for y in range(max_y + 1)]
+    max_x, max_y = max(x for x, _ in G), max(y for _, y in G)
+    heuristic = partial(dist, max_x=max_x, max_y=max_y)
+    gen_nbrs = partial(nbrs, max_x=max_x, max_y=max_y)
 
     start = (0, 0)
     goal = (max_x, max_y)
@@ -54,7 +50,7 @@ def part1(G, dist=identity):
     # Current lowest cost to each node
     costs = defaultdict(lambda: sys.maxsize)
     costs[start] = 0
-    pq = [(costs[start] + H[0][0], start)]
+    pq = [(costs[start] + heuristic(start), start)]
 
     while pq:
         _heuristic_cost, (x, y) = heapq.heappop(pq)
@@ -64,14 +60,15 @@ def part1(G, dist=identity):
             # we're done
             return cost_to_current
         # N.B. we should never have a cycle by nature of the algorithm
-        for (nx, ny) in nbrs(x, y, max_x, max_y):
-            cost_with_current = cost_to_current + G[ny][nx]
+        for (nx, ny) in gen_nbrs(x, y):
+            cost_with_current = cost_to_current + G[(nx, ny)]
             if cost_with_current < costs[(nx, ny)]:
                 # We found a shorter path. Pushing onto heap will naturally
                 # "replace" the previous instance of (nx, ny) by inserting
                 # above it
                 costs[(nx, ny)] = cost_with_current
-                heapq.heappush(pq, (cost_with_current + H[ny][nx], (nx, ny)))
+                heapq.heappush(
+                    pq, (cost_with_current + heuristic(nx, ny), (nx, ny)))
 
     assert False, "No path found"
 
@@ -84,9 +81,12 @@ def part2(G):
 
 def main(input_file):
     with open(input_file, 'r') as f:
-        content = f.read().splitlines()
+        lines = f.read().splitlines()
 
-    G = [[int(n) for n in line] for line in content]
+    G = {(x, y): int(v)
+         for y, line in enumerate(lines)
+         for x, v in enumerate(line)
+    }
 
     val1 = part1(G)
     print('Part 1:', val1)
