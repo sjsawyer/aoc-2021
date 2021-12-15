@@ -1,5 +1,6 @@
 import heapq
 import sys
+from collections import defaultdict
 
 
 # For ease of visualizing
@@ -20,7 +21,7 @@ def manhattan(x, y, max_x, max_y):
     return abs(x - max_x) + abs(y - max_y)
 
 
-def manhattan_s(*args, s=5):
+def manhattan_s(*args, s=2):
     return s*manhattan(*args)
 
 
@@ -32,7 +33,7 @@ def identity(*args):
     return 0
 
 
-def part1(G, dist=manhattan):
+def part1(G, dist=identity):
     max_x, max_y = len(G[0])-1, len(G)-1
     # Using A*, we will create a heuristic H where H[y][x] is the cost to
     # reach the goal from (x, y) (Manhattan distance here)
@@ -42,42 +43,32 @@ def part1(G, dist=manhattan):
           for x in range(max_x + 1)]
          for y in range(max_y + 1)]
 
-    # We will keep track of the lowest cost so far to reach (x, y), and
-    # store this in a min heap sorted by the cost_so_far + heuristic
-    # [cost+heuristic, cost, coord]
-    pq = [[sys.maxsize, sys.maxsize, (x, y)]
-          for x in range(max_x + 1)
-          for y in range(max_y + 1)]
-    pq[0][1] = 0
-    pq[0][0] = pq[0][1] + H[0][0]
-
-    # We also need a mapping from node to cost vector in the heap to look up
-    # neighbours' costs
-    costs = {v[-1]: v for v in pq}
-
+    start = (0, 0)
     goal = (max_x, max_y)
+
+    # Current lowest cost to each node
+    costs = defaultdict(lambda: sys.maxsize)
+    costs[start] = 0
+    pq = [(costs[start] + H[0][0], start)]
+
     while pq:
-        h_cost, cost_to_current, (x, y) = heapq.heappop(pq)
-        if cost_to_current == sys.maxsize:
-            raise RuntimeError('graph is disconnected?')
+        _heuristic_cost, (x, y) = heapq.heappop(pq)
+        cost_to_current = costs[(x, y)]
+        assert cost_to_current != sys.maxsize, "Graph disconnected?"
         if (x, y) == goal:
             # we're done
             return cost_to_current
         # N.B. we should never have a cycle by nature of the algorithm
-        changed = False
         for (nx, ny) in nbrs(x, y, max_x, max_y):
-            _heuristic_cost_n, cost_n, _ = costs[(nx, ny)]
             cost_with_current = cost_to_current + G[ny][nx]
-            if cost_with_current < cost_n:
-                changed = True
-                # we found a shorter path
-                costs[(nx, ny)][0] = cost_with_current + H[ny][nx]
-                costs[(nx, ny)][1] = cost_with_current
-        # redistribute heap
-        if changed:
-            heapq.heapify(pq)
+            if cost_with_current < costs[(nx, ny)]:
+                # We found a shorter path. Pushing onto heap will naturally
+                # "replace" the previous instance of (nx, ny) by inserting
+                # above it
+                costs[(nx, ny)] = cost_with_current
+                heapq.heappush(pq, (cost_with_current + H[ny][nx], (nx, ny)))
 
-    raise RuntimeError('no nodes left?')
+    assert False, "No path found"
 
 
 
