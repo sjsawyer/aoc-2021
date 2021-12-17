@@ -1,4 +1,5 @@
 import sys
+from functools import reduce
 
 def char_to_bin(c):
     return "{0:04b}".format(int(c, 16))
@@ -51,37 +52,54 @@ def decode(hex_string):
                     data = read(5)
                     not_last = data & 0b10000
                     literal = (literal << 4) | (data & 0b01111)
-                return i
+                return i, literal
 
             elif state == State.READ_LENGTH_TYPE_ID:
                 ltid = read(1)
+
+                values = []
                 if ltid == 0:
                     total_len = read(15)
                     j = i
                     i += total_len
                     while j < i:
-                        j = process_packet(j)
-                    return i
-
+                        j, val = process_packet(j)
+                        values.append(val)
                 else:
                     num_packets = read(11)
                     for _ in range(num_packets):
-                        i = process_packet(i)
-                    return i
+                        i, val = process_packet(i)
+                        values.append(val)
 
-    process_packet(0)
-    return sum(versions)
+                res = None
+                if type_id == 0:
+                    res = sum(values)
+                elif type_id == 1:
+                    res = reduce(lambda x,y: x*y, values)
+                elif type_id == 2:
+                    res = min(values)
+                elif type_id == 3:
+                    res = max(values)
+                elif type_id == 5:
+                    res = int(values[0] > values[1])
+                elif type_id == 6:
+                    res = int(values[0] < values[1])
+                elif type_id == 7:
+                    res = int(values[0] == values[1])
+
+                return i, res
+
+    _, res = process_packet(0)
+    return sum(versions), res
 
 
 def main(input_file):
     with open(input_file, 'r') as f:
         hex_string = f.read().strip()
 
-    val1 = decode(hex_string)
+    val1, val2 = decode(hex_string)
     print('Part 1:', val1)
-
-    #val2 = part2(hex_string)
-    #print('Part 2:', val2)
+    print('Part 2:', val2)
 
 
 if __name__ == '__main__':
