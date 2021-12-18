@@ -6,30 +6,41 @@ class SnailNumber:
     A snail number is a pair of two elements, where each element is either
     a regular number or another `SnailNumber`
     """
-    def __init__(self, left=None, right=None, parent=None):
+    def __init__(self, left=None, right=None, parent=None, value=None, signature=None):
         self.left = left
         self.right = right
+        self.value = value
         self.parent = parent
+        self.signature = signature
 
     @classmethod
-    def from_list(cls, l, parent=None):
+    def from_list(cls, l, parent=None, signature = ''):
         sn = cls()
 
+        leftsig = signature + 'l'
         if isinstance(l[0], list):
-            left = cls.from_list(l[0], parent=sn)
+            left = cls.from_list(l[0], parent=sn, signature=leftsig)
         else:
-            left = l[0]
+            left = SnailNumber(value=l[0], signature=leftsig)
 
+        rightsig = signature + 'r'
         if isinstance(l[1], list):
-            right = cls.from_list(l[1], parent=sn)
+            right = cls.from_list(l[1], parent=sn, signature=rightsig)
         else:
-            right = l[1]
+            right = SnailNumber(value=l[1], signature=rightsig)
 
         sn.left = left
         sn.right= right
         sn.parent = parent
+        sn.signature = signature
 
         return sn
+
+    def __repr__(self):
+        if self.value:
+            return str(self.value)
+        else:
+            return '[' + repr(self.left) + ',' + repr(self.right) + ']'
 
 
 
@@ -56,6 +67,7 @@ def main(input_file):
         content = f.read().splitlines()
 
     numbers = [eval(s) for s in content]
+    import pdb; pdb.set_trace()
     snail_numbers = [SnailNumber.from_list(l) for l in numbers]
 
     assert (
