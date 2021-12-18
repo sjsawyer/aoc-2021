@@ -1,4 +1,5 @@
 import sys
+import heapq
 
 
 class SnailNumber:
@@ -43,14 +44,42 @@ class SnailNumber:
             return '[' + repr(self.left) + ',' + repr(self.right) + ']'
 
 
+def update_signatures(sn, sigprefix=''):
+    if sn is None:
+        return
+    if sn.parent is None:
+        update_signatures(sn.left, sigprefix='l')
+        update_signatures(sn.right, sigprefix='r')
+    else:
+        sn.signature = sigprefix + sn.signature
+        update_signatures(sn.left, sigprefix=sigprefix)
+        update_signatures(sn.right, sigprefix=sigprefix)
+
 
 def add_snail_numbers(sn1, sn2):
     # first construct the new number
     sn = SnailNumber(left=sn1, right=sn2)
     sn1.parent = sn
     sn2.parent = sn
+    import pdb; pdb.set_trace()
+    update_signatures(sn)
 
-    # operations to perform:
+    to_explode = []
+    to_split = []
+
+    def populate(number, depth):
+        if depth == 4 and not number.value:
+            heapq.heappush(to_explode, (number.signature, number))
+        elif number.value and number.value > 9:
+            heapq.heappush(to_split, (number.signature, number))
+        if number.left is not None:
+            visit(number.left, depth+1)
+        if number.right is not None:
+            visit(number.right, depth+1)
+
+    # get the initial tasks to do
+    populate(sn, 0)
+    import pdb; pdb.set_trace()
 
 
 
