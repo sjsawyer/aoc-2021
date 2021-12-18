@@ -27,45 +27,37 @@ def manhattan(x, y, max_x, max_y):
     return abs(x - max_x) + abs(y - max_y)
 
 
-def manhattan_s(*args, s=2):
-    return s*manhattan(*args)
-
-
-def euclidean(x, y, max_x, max_y):
-    return ((x - max_x)**2 + (y - max_y)**2)**0.5
-
-
 def identity(*args, **kwargs):
     return 0
 
 
-def astar(G, dist=identity, scale=5):
+def astar(G, dist=identity, scale=1):
     max_x, max_y = max(x for x, _ in G), max(y for _, y in G)
-    max_x_scaled = scale * (max_x + 1) - 1
-    max_y_scaled = scale * (max_y + 1) - 1
+    width, height = max_x + 1, max_y + 1
+    width_scaled, height_scaled = width * scale, height * scale
 
-    heuristic = partial(dist, max_x=max_x_scaled, max_y=max_y_scaled)
-    gen_nbrs = partial(nbrs, max_x=max_x_scaled, max_y=max_y_scaled)
+    heuristic = partial(dist, max_x=width_scaled-1, max_y=height_scaled-1)
+    gen_nbrs = partial(nbrs, max_x=width_scaled-1, max_y=height_scaled-1)
 
     start = (0, 0)
-    goal = (max_x_scaled, max_y_scaled)
+    goal = (width_scaled-1, height_scaled-1)
 
     # This will help replicate the map
-    def G_scaled(G, max_x, max_y):
-        width, height = max_x + 1, max_y + 1
+    def G_replicated(G, width, height):
 
         def _eval_G(x, y):
             x0, y0 = x % width, y % height
             dx, dy = x // width, y // height
             return (G[(x0, y0)] + dx + dy - 1) % 9 + 1
+
         return _eval_G
 
-    eval_G = G_scaled(G, max_x, max_y)
+    eval_G = G_replicated(G, width, height)
 
     # Current lowest cost to each node
     costs = defaultdict(lambda: sys.maxsize)
     costs[start] = 0
-    pq = [(costs[start] + heuristic(start), start)]
+    pq = [(costs[start] + heuristic(*start), start)]
 
     while pq:
         _heuristic_cost, (x, y) = heapq.heappop(pq)
@@ -94,14 +86,13 @@ def main(input_file):
 
     G = {(x, y): int(v)
          for y, line in enumerate(lines)
-         for x, v in enumerate(line)
-    }
+         for x, v in enumerate(line)}
 
     val1 = astar(G)
     print('Part 1:', val1)
 
-    #val2 = astar(G)
-    #print('Part 2:', val2)
+    val2 = astar(G, scale=5)
+    print('Part 2:', val2)
 
 
 if __name__ == '__main__':
