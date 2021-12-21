@@ -128,8 +128,6 @@ def explode(sn, path, todo, intodo):
         if left.value > 9:
             heap_add(todo, 's' + left_path, left, intodo)
     if right:
-        #if right_path == 'rrrl':
-        #    print('\nhere', right_path, right.value, '\n')
         right.value += right_val
         if right.value > 9:
             heap_add(todo, 's' + right_path, right, intodo)
@@ -204,27 +202,28 @@ def add_snail_numbers(sn1, sn2):
     populate(sn, 0, '')
 
     # now do them
-    j = 0
-    print("reducing:", sn)
     while todo:
-        #print(j)
-        print(todo)
-        sn.print_tree()
         key, number = heap_pop(todo, intodo)
-        #print(len(todo))
         task, path = key[0], key[1:]
         if task == 'e':
             explode(number, path, todo, intodo)
-            print("exploded:", sn)
         elif task == 's':
             split(number, path, todo, intodo)
-            print("split:   ", sn)
-        else:
-            raise Exception('oh shittt')
 
-    print(sn)
     return sn
 
+
+def part2(sns_list):
+    max_mag = -1
+    for sn1 in sns_list:
+        for sn2 in sns_list:
+            if sn1 == sn2:
+                continue
+            sn_sum = add_snail_numbers(
+                SnailNumber.from_list(sn1), SnailNumber.from_list(sn2))
+            mag = magnitude(sn_sum)
+            max_mag = max(max_mag, mag)
+    return max_mag
 
 
 def main(input_file):
@@ -235,16 +234,11 @@ def main(input_file):
     snail_numbers = [SnailNumber.from_list(l) for l in numbers]
     res = reduce(lambda x, y: add_snail_numbers(x, y), snail_numbers)
     mag = magnitude(res)
-    print(mag)
-    #print(res)
+    print("Part 1:", mag)
 
-
-    #assert (
-    #    add_snail_numbers(snail_numbers[0], snail_numbers[1]) ==
-    #    SnailNumber.from_list([[[[0,7],4],[[7,8],[6,0]]],[8,1]])
-    #)
-
-
+    snail_numbers = [SnailNumber.from_list(l) for l in numbers]
+    val2 = part2(numbers)
+    print("Part 2:", val2)
 
 
 if __name__ == '__main__':
